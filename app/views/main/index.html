@@ -1,0 +1,28 @@
+<html>
+	<head>
+		<title>tz microframework for NodeJS</title>
+	</head>
+	
+	<body>
+		<b>tz microframework for NodeJS</b>
+		<p>Hello, <%= user %>!</p>
+		<ul>
+			<li>url: <%= @mod('req').url %></li>
+			<li>controller: <%= @attr 'controller' %></li>
+			<li>action: <%= @attr 'action'  %></li>
+			<li>params: 
+				<ul>
+					<% for key, value of do @params: %>
+						<li><%= key %>: <%= value or 'empty' %></li>
+					<% end %>
+				</ul>
+			</li>
+		</ul>
+		<a href="<%= tz.url controller: 'main', action: 'test' %>">Teste</a>
+		<a href="<%= tz.url type: 'js', file: 'jquery.js' %>">jQuery</a>
+		<form action='' method='POST'>
+			<input type='text' name='name' placeholder="name"
+			<input type="submit">
+		</form>
+	</body>
+</html>
