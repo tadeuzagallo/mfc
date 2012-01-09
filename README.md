@@ -69,7 +69,7 @@ they are just called if the controller has them.
 
 ###Methods###
 
-- **constructor (Key, Value, [Options])**: Create a new cookie where Key=Value. The properties available are:
+- **constructor (Key, Value, [Options])**: Create a new cookie where Key=Value. The options available are:
 	- **expires**: Date timestamp to the expire date of the cookie.
 	- **domain**: Domain where the cookie is valid.
 	- **path**: Path where the cookie is valid.
