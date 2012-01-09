@@ -1,0 +1,37 @@
+#!/usr/bin/env coffee
+
+###
+MFC (Micro Framework for CoffeeScript)
+
+Author: Tadeu Zagallo ( https://github.com/tadeuzagallo )
+###
+
+path = require 'path'
+global.LIB_PATH = "#{path.dirname(__filename)}/lib"
+require "#{LIB_PATH}/tz"
+
+if process.argv.length > 2
+	operation = process.argv[2]
+	name = process.argv[3]
+	unless name and operation is 'app'
+		return console.log 'Usage: mfc app <appname>'
+	
+	create = require "#{LIB_PATH}/create"
+	create.do name
+
+else
+	__dirname = process.cwd()
+	
+	tz.__set_default('basePath', "#{__dirname}").__set_default('publicPath', "#{__dirname}/public").__set_default('controllersFolder', "#{__dirname}/app/controllers").__set_default('viewsFolder', "#{__dirname}/app/views").__set_default('layoutsFolder', "#{__dirname}/app/views/layouts")
+	try
+		config = require "#{__dirname}/app/config/config"
+	catch err
+		tz.log "Configuration file not found at #{__dirname}/app/config/config.coffee, is this an tz application?"
+		process.exit()
+	
+	try
+		tz.__set_default(key, value) for key,value of config
+	catch err
+		tz.log "Your configuration file has error(s), check the stack and the file", err.stack
+
+	require "#{LIB_PATH}/server"

@@ -1,0 +1,21 @@
+<b>tz microframework for CoffeeScript</b>
+<ul>
+	<li>application: example</li>
+	<li>url: <%= @url %></li>
+	<li>controller: <%= @attr 'controller' %></li>
+	<li>action: <%= @attr 'action'  %></li>
+	<li>layout: <%= if ((layout = @attr 'layout')) then "#{@attr 'basePath'}/app/views/layouts/#{layout}" else 'null' %></li>
+	<li>view: <%= if (view = @attr 'view').length then "#{@attr 'basePath'}/app/views/#{@attr 'controller'}/#{view}" else 'null' %></li>
+	<li>params:
+		<ul>
+			<% x = 0 %>
+			<% for key, value of do @params: %>
+				<% x++ %>
+				<li><%= key %>: <%= value or 'empty' %></li>
+			<% end %>
+			<% unless x: %>
+				<li>empty</li>
+			<% end %>
+		</ul>
+	</li>
+</ul>
