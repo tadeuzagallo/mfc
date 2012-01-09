@@ -4,7 +4,7 @@
 		$ cd mfc
 		$ sudo ./install.sh
 
-		# To start running the example appliication
+		# To start running the example application
 
 		$ cd /usr/local/mfc/example
 		$ mfc
@@ -87,7 +87,7 @@ they are just called if the controller has them.
 
 ###Properties###
 
-The mandatory properties are Key and Value, but any other property set on the Options object will be stored on the instance. The properties that will be used by the engine are listed above, under the construction method.
+The mandatory properties are Key and Value, but any other property set on the Options object will be stored on the instance. The properties that will be used by the engine are listed above, under the constructor method.
 
 ##Object TZ##
 
