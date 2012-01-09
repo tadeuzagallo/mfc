@@ -1,6 +1,6 @@
 #MFC - Micro Framework for CoffeeScript#
 
-		$ git clone git@github.com/tadeuzagallo/mfc
+		$ git clone git@github.com:tadeuzagallo/mfc
 		$ cd mfc
 		$ sudo ./install.sh
 
