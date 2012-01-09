@@ -1,11 +1,12 @@
-<b>tz microframework for CoffeeScript</b>
+<b>Micro Framework for CoffeeScript</b>
 <ul>
 	<li>application: example</li>
+	<li>baseUrl: <%= @attr('baseUrl') or 'empty' %></li>
 	<li>url: <%= @url %></li>
 	<li>controller: <%= @attr 'controller' %></li>
 	<li>action: <%= @attr 'action'  %></li>
-	<li>layout: <%= if ((layout = @attr 'layout')) then "#{@attr 'basePath'}/app/views/layouts/#{layout}" else 'null' %></li>
-	<li>view: <%= if (view = @attr 'view').length then "#{@attr 'basePath'}/app/views/#{@attr 'controller'}/#{view}" else 'null' %></li>
+	<li>layout: <%= if ((layout = @attr 'layout')) then @layout(layout) else 'null' %></li>
+	<li>view: <%= if (view = @attr 'view').length then @view(view) else 'null' %></li>
 	<li>params:
 		<ul>
 			<% x = 0 %>

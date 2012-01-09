@@ -1,8 +1,13 @@
 #MFC - Micro Framework for CoffeeScript#
 
-		$ git clone git@github.com:tadeuzagallo/mfc
+		$ git clone git@github.com:tadeuzagallo/mfc.git
 		$ cd mfc
 		$ sudo ./install.sh
+
+		# To start running the example appliication
+
+		$ cd /usr/local/mfc/example
+		$ mfc
 
 		# To create a new application
 		
@@ -37,6 +42,8 @@
 - **route ()**: This method is called when the url points to an controller, find the controller and executes initialize, beforeAction and the action requested, on this order. the beforeAction property may be changed on the config file, and the controller might not have initialize and beforeAction,
 they are just called if the controller has them.
 - **handleStatic ()**: Serve static files.
+- **view (ViewName)**: Finds the path to ViewName.
+- **layout (LayoutName)**: Finds the path to LayoutName.
 
 ###Properties###
 
@@ -88,8 +95,6 @@ The mandatory properties are Key and Value, but any other property set on the Op
 
 - **_get (Object, Key, [Value, Override, Default])**: *Internal use only*. Used by the functions params and attr. You DO NOT need to call this method directly.
 - **attr (name)**: *Internal use only*. It is just used outside of the request, just can access the defaultOptions. You SHOULD NOT call this method as well, The attr method should called from an ServerResponse instance, and just inside the request. Everything that you think you need set outside of the request, or on the global scope should bu put on the config file.
-- **view (ViewName)**: Finds the path to ViewName.
-- **layout (LayoutName)**: Finds the path to LayoutName.
 - **log (Message, [Error])**: Logs the Message and StackTrace provided by the Error, if you pass an ErrorObject and it has the stack property. If the debug is off, this method just does nothing.
 - **ucfirst (string)**: Returns the string with the first letter uppercase.
 - **\_\_set_default (Key, Value)**: Internal user only. Adds or update the default value (Key), with the value (Value). All the properties on the Object provided by the config file will be added this way.

@@ -22,13 +22,6 @@ global.tz =
 		unless name
 			return false
 		return @_defaults[@_private name]
-	
-	view: (view)->
-		"#{@attr 'viewsFolder'}/#{@attr 'controller'}/#{view}.#{@attr 'extension'}"
-	
-	layout: (layout)->
-		"#{@attr 'layoutsFolder'}/#{layout}.#{@attr 'extension'}"
-	
 	log: (txt, err)->
 		if @attr 'debug'
 			console.log "#{(new Date).toString()}: #{txt}" if @attr('debugLevel') is 'high'

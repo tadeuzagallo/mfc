@@ -100,13 +100,13 @@ http.ServerResponse.prototype.render = (layout, view, params = {})->
 				return @end @template layout, view
 			@attr 'view', view
 			@attr 'params', params
-			fs.readFile tz.view(view), (err, content)=>
+			@attr 'layout', layout
+			fs.readFile @view(view), (err, content)=>
 				throw err if err
 				content = @template content, params
 				@writeCode 200
 				if layout
-					@attr 'layout', layout
-					return fs.readFile tz.layout(layout), (err, _content)=>
+					return fs.readFile @layout(layout), (err, _content)=>
 						throw err if err
 						params.__internal_body = content
 						@end @template(_content, params), 'utf8'
@@ -235,7 +235,7 @@ http.ServerResponse.prototype.match = ->
 			filepath = path.join @attr('publicPath'), path.join.apply this, urlArray[1...]
 			return @handleStatic filepath
 		
-		@attr 'controller', tz.ucfirst urlArray.shift()
+		@attr('controller', tz.ucfirst urlArray.shift()) if urlArray.length
 		@attr('action', urlArray.shift()) if urlArray.length
 
 		while urlArray.length
@@ -287,3 +287,10 @@ http.ServerResponse.prototype.handleStatic = (filename)->
 			s.pipe(@)
 		catch err
 			@_404 err
+
+http.ServerResponse.prototype.view = (view)->
+		"#{@attr 'viewsFolder'}/#{@attr('controller').toLowerCase()}/#{view}.#{@attr 'extension'}"
+	
+http.ServerResponse.prototype.layout = (layout)->
+	"#{@attr 'layoutsFolder'}/#{layout}.#{@attr 'extension'}"
+	
