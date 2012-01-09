@@ -4,11 +4,13 @@
 		$ cd mfc
 		$ sudo ./install.sh
 
-		#To create a new application
-		$ mfc app example
+		# To create a new application
+		
+	  	$ mfc app example
 
-		#Tu run the server on port 4000 is just you execute the mfc on the project root folder
-		$ cd example
+		# Tu run the server on port 4000 is just you execute the mfc on the project root folder
+		
+	  	$ cd example
 		$ mfc
 
 ##Http ServerResponse Prototype Added##
