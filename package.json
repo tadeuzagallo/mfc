@@ -1,21 +1,26 @@
 {
-  "name":         "MFC",
-  "description":  "Micro Framework for CoffeeScript",
-  "keywords":     ["coffee-script", "javascript", "coffeescript", "framework"],
-  "author":       "Tadeu Zagallo",
-  "version":      "0.0.1-pre",
-  "engines":      {
-    "coffee":       ">=1.1.3"
-  },
-  "directories" : {
-    "lib" : "./lib"
-  },
-  "bin":          {
-    "coffee":     "./bin/mfc",
-  },
-  "homepage":     "https://github.com/tadeuzagallo/mfc",
-  "repository":   {
-    "type": "git",
-    "url": "git://github.com/tadeuzagallo/mfc.git"
-  }
+    "name": "MFC",
+    "description": "Micro Framework for CoffeeScript",
+    "keywords": [
+        "coffee-script",
+        "javascript",
+        "coffeescript",
+        "framework"
+    ],
+    "author": "Tadeu Zagallo",
+    "version": "0.0.1-pre",
+    "engines": {
+        "coffee": ">=1.1.3"
+    },
+    "directories": {
+        "lib": "./lib"
+    },
+    "bin": {
+        "coffee": "./bin/mfc"
+    },
+    "homepage": "https://github.com/tadeuzagallo/mfc",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/tadeuzagallo/mfc.git"
+    }
 }
