@@ -13,10 +13,10 @@ global.tz =
 	_get: (obj, key, name, value, override, _default)->
 		key = @_private key
 		name = @_private name if name
-		if (override  or not obj[key][name]) and (value or _default?)
-			if not value and _default and (match = _default.match /^eval:(.*)$/)
+		if (override  or not obj[key][name]) and (value? or _default?)
+			if not value? and _default? and (match = _default.match /^eval:(.*)$/)
 				_default = eval match[1]
-			obj[key][name] = value or _default
+			obj[key][name] = if value? then value else _default
 		return if value? then obj else (if obj[key][name]? then  obj[key][name] else (if key is '_attr' then @_defaults[name] else undefined))
 	attr: (name)->
 		unless name

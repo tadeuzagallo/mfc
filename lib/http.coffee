@@ -5,6 +5,54 @@ crypto = require 'crypto'
 coffee = require 'coffee-script'
 querystring = require 'querystring'
 
+formparser = (data, contentType)->
+	parsename = (stack, name, value)->
+		if ((_name = /^(\w+)\[(\w*)?\](\[\])?$/.exec(name)))
+			unless stack[_name[1]]?
+				if _name[2]
+					stack[_name[1]] = {}
+				else
+					stack[_name[1]] = []
+			
+			unless _name[2]?
+				stack[_name[1]].push value
+
+			else if _name[3]?
+				unless stack[_name[1]][_name[2]]?
+					stack[_name[1]][_name[2]] = []
+				
+				stack[_name[1]][_name[2]].push(value)
+			else 
+				stack[_name[1]][_name[2]] = value
+		else
+			stack[name] = value
+
+	
+	if contentType is 'application/x-www-form-urlencoded'
+		unless querystring
+			querystring = require 'querystring'
+		return querystring.parse data
+		
+	else if ((boundary = /boundary=(.*)$/.exec(contentType)))?
+		data = data.split boundary[1]
+		result = {}
+		for line in data
+			if ((prop = /name="([^"]*)"\r\n\r\n([^\r]*)\r\n--/.exec(line)))?
+				name = prop[1]
+				value = prop[2]
+				parsename(result, name, value)
+			else if ((prop = /name="([^"]*)"; filename="([^"]*)"\r\nContent-Type: ([^\r]+)\r\n\r\n([\s\S]*)?\r\n--/.exec(line)))
+				name = prop[1]
+				value = 
+					filename: prop[2]
+					contentType: prop[3]
+					content: prop[4]
+				parsename(result, name, value)
+		return result
+	else 
+		return data
+
+
 class __Session
 		constructor: (@cookies)->
 			@
@@ -18,13 +66,17 @@ class __Session
 			return "#{base64}#{time}#{hex}#{time}".replace /[^a-zA-Z1-9]/g, random()
 		start: ->
 			@_is_started = yes
-			@_cookies = new Object
+			@_cookies = {}
 			@_parse @cookies, ';', no
 			unless @_cookies.TZSESSID
 				@_cookies.TZSESSID = new @Cookie 'TZSESSID', @_generate_id(), send: yes, save: no
 			@id = @_cookies.TZSESSID.value
 			@_file = "/tmp/#{@id}"
-			fs.openSync(@_file, 'a+') unless path.existsSync @_file
+
+			unless path.existsSync @_file
+				fd = fs.openSync(@_file, 'a+')
+				fs.close(fd)
+
 			@_parse fs.readFileSync(@_file).toString(), '\n', save: yes
 		Cookie: class
 			constructor: (@name, @value, opts = {})->
@@ -38,7 +90,7 @@ class __Session
 					@save = no
 			toString: ->
 				r = ["#{@name}=#{@value}"]
-				r.push "path=#{@path or tz.attr('baseUrl')}" if @send
+				r.push "path=#{@path or tz.attr('baseUrl') or '/'}" if @send
 				r.push "expires=#{@expires}" if @send and @expires
 				r.push "domain=#{@domain}" if @domain and @send
 				return r.join ';'
@@ -66,27 +118,29 @@ class __Session
 			unless key and @_cookies[key]
 				return
 			
-			if @_cookies[key].save
+			if @_cookies[key].save is true
 				delete @_cookies[key]
 				@save()
 			else
 				@_cookies[key].send = true
 				@_cookies[key].expires = new Date(Date.now() - 24 * 60 * 60 * 1000).toString()
-			@
+			return @
 		get: (key)->
 			@_cookies[key].value if @_cookies[key]
 		output: ->
-			_output = new Array
+			_output = []
 			(_output.push "#{cookie.toString()}" if cookie.send) for name, cookie of @_cookies
 			_output
 		save: ->
-			output = new Array
-			(output.push cookie.toString() if cookie.save) for name, cookie of @_cookies
-			fs.writeFile @_file, output.join '\n'
+			output = (cookie.toString() for name, cookie of @_cookies when cookie and cookie.save)
+			fs.writeFileSync @_file, output.join '\n'
 
 http.ServerResponse.prototype.params = (name, value, override = yes, _default)->
 			unless name
 				return tz._public @_params
+			else if typeof name is 'object' and Object.prototype.toString.call(name) is '[object Object]'
+				@params(key, value) for key, value of name
+				return @
 			return tz._get @, 'params', name, value, override, _default
 
 http.ServerResponse.prototype.attr = (name, value, override = yes, _default)->
@@ -116,29 +170,62 @@ http.ServerResponse.prototype.render = (layout, view, params = {})->
 			tz.log("Failed rendering...", err)
 			@_500 err
 http.ServerResponse.prototype.template = (content, params = {})->
+		spaceStringify = (string)->
+			unless string
+				return ''
+			
+			string.replace(/\r/g, '\\r').replace(/\t/g, '\\t').replace(/\n/g, '\\n')
+		multiline = (space, code)->
+			space = spaceStringify(space.split('\n').pop())
+			temp = (l for l in code.split('\n') when l)
+			code = []
+			for line, index in temp
+				line = line.replace new RegExp("^#{space}", 'g'), ''
+				if index is 0
+					line = line.replace /^(\s*)(.*)/, (match, _space, nospace)->
+						_space = spaceStringify _space
+						
+						if _space.length > 0
+							space = space + _space
+						
+						return nospace
+				code.push line
+			code.join '\n'
 		try
 			content += ''
 			c = coffee.compile
-			r = /<%(=)?(#)?([\s\S]*?)%>/g
-			holder = new Array
+			r = /(\s*)<%(=)?(#)?([\s\S]*?)%>/g
+			holder = []
 			__internal = @attr 'internal'
-			template = "var #{__internal} = [], yield = function(){return params.__internal_body;}; with(params){#{__internal}.push('" + content
+			template = "var #{__internal} = [], yield = function(){return params.__internal_body;}, print = function () { #{__internal}.concat(arguments); }; with(params){#{__internal}.push('" + content
 				.replace(/\\/g, '\\\\')
 				.replace(/'/g,'\\\'' )
-				.replace(/<coffee>([\s\S]+?)<\/coffee>/g, (match, code)->
+				.replace(/(\s*)<coffee>([\s\S]+?)<\/coffee>/g, (match, space, code)->
 					code = code.replace(r, (match)->
 						return match.replace /\\'/g, '"'
 					).replace /\\'/g, '\''
-					code = c(code).trim().replace /'/g, '\\\''
-					return "<script type=\"text/javascript\">#{code}</script>"
+					code = multiline(space, code)
+					try
+						code = c(code).trim().replace /'/g, '\\\''
+					catch err
+						tz.log "Failed compiling coffee tag, piece of code: #{code}", err
+						throw err
+
+					return "#{space}<script type=\"text/javascript\">#{code}</script>"
 				)
-				.replace(r,  (match, print,comment, code, index, all)=>
+				.replace(r,  (match, space, print, comment, code, index, all)=>
 						code = code.trim().replace /\\'/g,'\''
+						code = multiline space, code
 						if print or comment
-							code = c("(->\n\t#{code}).call(this)").trim()
+							try
+								code = c("(->\n\t#{code}).call(this)").trim()
+							catch err
+								tz.log "Failed compiling print code, piece of code: #{code}", err
+								throw err
+
 							code = code.substr(0, code.length - 1) if code.charAt(code.length-1) is ';'
 							code = "'<!-- ' + #{code} + ' -->'" if comment
-							return "', #{code}, '"
+							return "', '#{space}', #{code}, '"
 						else if code is 'end'
 							if holder.length then code = holder.pop() else code = '}'
 						else if code.charAt(code.length-1) is ':'
@@ -150,7 +237,10 @@ http.ServerResponse.prototype.template = (content, params = {})->
 							catch err
 								code = "}#{code.substr 0, code.length-1}{"
 						else 
-							code = c(code)
+							try
+								code = c(code)
+							catch err
+								tz.log "Failed compiling eval code, piece of code: #{code}", err
 						code = match[1] if ((match = code.match /\(function\(\)\s*{([\s\S]*)}\s*\).call\(this\)\s*;/))
 						return "'); #{code} #{__internal}.push('"
 				) + "');} return #{__internal}.join('');"
@@ -158,7 +248,7 @@ http.ServerResponse.prototype.template = (content, params = {})->
 				.replace(/\n/g, '')
 				.replace(/\t/g, '')
 				.replace(/\r/g, '')
-				.replace(/\s/g, ' ')
+				.replace(/\s+/g, ' ')
 			).call @, params
 		catch err
 			@_500 err
@@ -172,7 +262,7 @@ http.ServerResponse.prototype._500 = (err)->
 	@end "<html><head><title>500</title></head><body><center><h2>Internal server error</h2>" + (if @attr('debug') and err and err.stack then "<pre style='text-align:left;'>#{err.stack}</pre>" else "") + "</center></body></html>"
 
 http.ServerResponse.prototype.writeCode = (code, ct='text/html')->
-	_headers = new Object
+	_headers = {}
 	_headers['Content-Type'] = ct
 	if code is 200 and @session._is_started
 		output = @session.output()
@@ -184,8 +274,8 @@ http.ServerResponse.prototype.redirect = (url = {})->
 	if typeof url is 'object'
 		url = @createUrl url
 
-	unless typeof Url is 'string'
-		return off
+	unless typeof url is 'string'
+		@_500()
 
 	@writeHead 302, Location: url
 	@end ('')
@@ -195,39 +285,51 @@ http.ServerResponse.prototype.createUrl = (obj={})->
 			obj.action or= 'index'
 			url = "#{@attr 'baseUrl'}/#{obj.controller}/#{obj.action}/" 
 			url += "#{key}/" + (if value then "#{value}/" else "") for key,value of obj.params if obj.params
+			url = url.replace /\/$/, ''
+			if ((ext = @attr 'urlExtension'))
+				url += ".#{ext}"
 			url
 		else if obj.type
-			return "#{@attr('staticUrl') or @attr('baseUrl') + '/static'}/#{obj.type}/#{obj.file}"
+			return "#{@attr('staticUrl') or @attr('baseUrl') + '/static'}/#{obj.type}/#{obj.file}.#{obj.type}"
 		else
 			return baseUrl
 
-http.ServerResponse.prototype.init = (req)->
-			tz.log "URL #{req.url} requested!"
-			@_attr = new Object
-			@_params = new Object
-			@method = req.method.toUpperCase()
-			@url = req.url
-			@headers = req.headers
-			@session = new __Session(@headers.cookie)
-			@__set_post(req)
+http.ServerResponse.prototype.init = (request)->
+			@_attr = {}
+			@_params = {}
 
-http.ServerResponse.prototype.__set_post = (req)->
+			if request.url is '/favicon.ico' and @attr 'ignoreFavicon'
+				return
+
+			tz.log "URL #{request.url} requested!"
+			@method = request.method.toUpperCase()
+			@url = request.url
+			@headers = request.headers
+			@session = new __Session(@headers.cookie)
+
+			@__set_post(request)
+
+http.ServerResponse.prototype.__set_post = (request)->
+		start = @attr('initialize') or ->
 		if @method in ['POST', 'PUT']
 			data = ''
-			req.on 'data', (chunk)->
+			request.on 'data', (chunk)->
 				data += chunk.toString()
-			req.on 'end', =>
-				for name, value of querystring.parse(data)
-					@params name, value
+			request.on 'end', =>
+				@params formparser data, @headers['content-type']
+				start.call(@, request)
 				@match()
 		else
+			start.call(@, request)
 			@match()
 
 http.ServerResponse.prototype.match = ->
 	try
 		url = @url.split('?')[0]
+		if ((ext = @attr 'urlExtension'))
+			url = url.replace new RegExp(".#{ext}$"), ''
 		_urlArray = url.split '/'
-		urlArray = new Array
+		urlArray = []
 		(urlArray.push v if v) for v in _urlArray
 		unless urlArray.length
 			return @route()
@@ -253,9 +355,13 @@ http.ServerResponse.prototype.route = ->
 			controllerPath = path.join controllerFolder, controllerName
 			controller = new require controllerPath
 		catch err
-			err = new Error "Controller '#{controllerName}' was not found at '#{controllerFolder}'"
 			tz.log("Failed routing", err)
-			return @_404 err
+			
+			if ((action = @attr 'controllerNotFound'))
+				action.call(@);
+			else
+				err = new Error "Controller '#{controllerName}' was not found at '#{controllerFolder}'"
+				return @_404 err
 		
 		try
 			beforeAction = @attr 'beforeAction'
@@ -266,10 +372,14 @@ http.ServerResponse.prototype.route = ->
 			unless controller[action]
 				throw new Error "Controller '#{controllerPath}' does not have an action called '#{action}'"
 
-			controller[action].apply(@)
+			controller[action].call(@)
 		catch err
 			tz.log("Failed routing", err)
-			@_404 err
+			
+			if ((action = @attr 'actionNotFound'))
+				action.call(@);
+			else
+				@_404 err
 
 http.ServerResponse.prototype.handleStatic = (filename)->
 		try
@@ -281,7 +391,7 @@ http.ServerResponse.prototype.handleStatic = (filename)->
 				'git': 'image/gif'
 			s = fs.createReadStream filename
 			@writeHead 200, 'Content-Type': mime[filename.split('.').pop()]
-			s.on 'error', -> 
+			s.on 'error', => 
 				@writeHead 404
 				@end()
 			s.pipe(@)

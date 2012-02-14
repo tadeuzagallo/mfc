@@ -4,7 +4,7 @@ fn = (name)->
 	fs.mkdir "./#{name}", 0777, ->
 		fs.mkdir "./#{name}/app", 0777, ->
 			fs.mkdir "./#{name}/app/controllers", 0777, ->
-				fs.writeFile "./#{name}/app/controllers/Main.coffee", "Main = \n\tindex: ->\n\t\t@.render 'main', 'index'\n\nmodule.exports = Main"
+				fs.writeFile "./#{name}/app/controllers/Main.coffee", "Main = \n\tindex: ->\n\t\t@render 'main', 'index'\n\nmodule.exports = Main"
 			fs.mkdir "./#{name}/app/views", 0777, ->
 				fs.mkdir "./#{name}/app/views", 0777, ->
 					fs.mkdir "./#{name}/app/views/main", 0777, ->
@@ -12,7 +12,7 @@ fn = (name)->
 					fs.mkdir "./#{name}/app/views/layouts", 0777, ->
 						fs.writeFile "./#{name}/app/views/layouts/main.html", "<html>\n\t<head>\n\t\t<title>#{name}</title>\n\t<head>\n\t<body>\n\t\t<%= do yield %>\n\t</body>\n</html>"
 					fs.mkdir "./#{name}/app/config", 0777, ->
-						fs.writeFile "./#{name}/app/config/config.coffee", "config = {\n\tbaseUrl: '' # The baseUrl must be set manually...\n}\n\nmodule.exports = config"
+						fs.writeFile "./#{name}/app/config/config.coffee", "config = \n\tbaseUrl: '' # The baseUrl must be set manually...\n\nmodule.exports = config"
 		fs.mkdir "./#{name}/public", 0777
 
 exports.do = fn

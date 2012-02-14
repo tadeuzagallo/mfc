@@ -24,8 +24,9 @@ else
 	
 	tz.__set_default('basePath', "#{__dirname}").__set_default('publicPath', "#{__dirname}/public").__set_default('controllersFolder', "#{__dirname}/app/controllers").__set_default('viewsFolder', "#{__dirname}/app/views").__set_default('layoutsFolder', "#{__dirname}/app/views/layouts")
 	try
-		config = require "#{__dirname}/app/config/config"
+		config = require "#{__dirname}/app/config/config.coffee"
 	catch err
+		console.log err.stack
 		tz.log "Configuration file not found at #{__dirname}/app/config/config.coffee, is this an tz application?"
 		process.exit()
 	
@@ -33,5 +34,6 @@ else
 		tz.__set_default(key, value) for key,value of config
 	catch err
 		tz.log "Your configuration file has error(s), check the stack and the file", err.stack
+		process.exit()
 
 	require "#{LIB_PATH}/server"
